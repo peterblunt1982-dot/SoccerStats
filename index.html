@@ -470,6 +470,7 @@ const STORAGE_KEY_DATE = 'redbacks_match_date';
 let scriptUrl  = '';
 let matchDate  = '';
 let players    = [];          // loaded from sheet
+let cachedResults = null;     // cached from sheet on startup
 let sessionGoals   = {};      // goals scored this session (by name)
 let sessionAssists = {};      // assists this session
 let currentSort    = 'goals';
@@ -544,7 +545,7 @@ function switchTab(name) {
     document.getElementById('tab-' + t).classList.toggle('active', t === name);
     document.getElementById('panel-' + t).classList.toggle('active', t === name);
   });
-  if (name === 'history') loadResults();
+  if (name === 'history') renderResults();
   if (name === 'stats')   renderStats();
   if (name === 'squad')   renderSquadList();
 }
@@ -969,6 +970,8 @@ function finaliseGame() {
       showToast('Failed to save — check connection','error'); return;
     }
     showToast('Game finalised! 🏆','success');
+    cachedResults = null; // force history to re-fetch next time
+    fetchResults();       // pre-warm the cache in background
     resetGameDay();
   });
 }
@@ -1023,18 +1026,37 @@ function loadPlayers() {
     document.getElementById(id).innerHTML =
       '<div class="loading-state"><div class="spinner"></div>Loading squad…</div>';
   });
+
+  // Fetch players and results in parallel
+  let playersDone  = false;
+  let resultsDone  = false;
+
+  function checkAllDone() {
+    if (playersDone && resultsDone) hideLoadingScreen();
+  }
+
   jsonp(scriptUrl + '?action=getPlayers', function(data, err) {
-    hideLoadingScreen();
+    playersDone = true;
     if (err || !data || data.error) {
       const msg = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not connect.<br>Check Script URL and deployment.</p></div>';
       document.getElementById('livePlayerList').innerHTML  = msg;
       document.getElementById('squadPlayerList').innerHTML = msg;
-      showToast('Connection error','error'); return;
+      showToast('Connection error','error');
+    } else {
+      players = data.players || [];
+      renderLivePlayerList();
+      renderSquadList();
+      showToast(players.length + ' players loaded','success');
     }
-    players = data.players || [];
-    renderLivePlayerList();
-    renderSquadList();
-    showToast(players.length + ' players loaded','success');
+    checkAllDone();
+  });
+
+  jsonp(scriptUrl + '?action=getResults', function(data, err) {
+    resultsDone = true;
+    if (!err && data && !data.error) {
+      cachedResults = data.results || [];
+    }
+    checkAllDone();
   });
 }
 
@@ -1110,53 +1132,66 @@ function recordStat(idx, type, listType) {
 // ============================================================
 // LOAD RESULTS HISTORY
 // ============================================================
-function loadResults() {
-  document.getElementById('resultsList').innerHTML =
-    '<div class="loading-state"><div class="spinner"></div>Loading…</div>';
+function renderResults() {
+  if (cachedResults !== null) {
+    // Render instantly from cache — no spinner
+    renderResultsList(cachedResults);
+  } else {
+    // First time — fetch with spinner
+    document.getElementById('resultsList').innerHTML =
+      '<div class="loading-state"><div class="spinner"></div>Loading…</div>';
+    fetchResults();
+  }
+}
+
+function fetchResults() {
   jsonp(scriptUrl + '?action=getResults', function(data, err) {
     if (err || !data || data.error) {
       document.getElementById('resultsList').innerHTML =
         '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load results.</p></div>';
       return;
     }
-    const results = (data.results || []).slice().reverse();
-    if (!results.length) {
-      document.getElementById('resultsList').innerHTML =
-        '<div class="empty-state"><div class="empty-icon">🏆</div><p>No results yet.<br>Finalise your first game on the Game Day tab.</p></div>';
-      return;
-    }
-    document.getElementById('resultsList').innerHTML = results.map(r => {
-      const our   = parseInt(r.ourScore)   || 0;
-      const their = parseInt(r.theirScore) || 0;
-      let outcome = 'draw', label = 'Draw';
-      if (our > their) { outcome = 'win';  label = 'Win';  }
-      if (our < their) { outcome = 'loss'; label = 'Loss'; }
-      let dateStr = r.date || '';
-      try {
-        if (dateStr) {
-          dateStr = formatDate(dateStr, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-        }
-      } catch(e) {}
-      return `<div class="result-card">
-        <div class="result-card-header">
-          <span class="result-card-date">${dateStr}</span>
-          <span class="result-card-outcome outcome-${outcome}">${label}</span>
-        </div>
-        <div class="result-card-score">
-          <div class="result-card-team">
-            <div class="result-card-team-name">Eltham Redbacks</div>
-            <div class="result-card-goals" style="color:${outcome==='win'?'var(--green)':outcome==='loss'?'var(--red)':'var(--black)'}">${our}</div>
-          </div>
-          <div class="result-card-vs" style="font-size:20px;font-weight:900;color:var(--gray-light)">—</div>
-          <div class="result-card-team">
-            <div class="result-card-team-name">${r.opponent || '—'}</div>
-            <div class="result-card-goals">${their}</div>
-          </div>
-        </div>
-        ${buildScorerLine(r.scorers)}
-      </div>`;
-    }).join('');
+    cachedResults = data.results || [];
+    renderResultsList(cachedResults);
   });
+}
+
+function renderResultsList(results) {
+  const reversed = results.slice().reverse();
+  if (!reversed.length) {
+    document.getElementById('resultsList').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🏆</div><p>No results yet.<br>Finalise your first game on the Game Day tab.</p></div>';
+    return;
+  }
+  document.getElementById('resultsList').innerHTML = reversed.map(r => {
+    const our   = parseInt(r.ourScore)   || 0;
+    const their = parseInt(r.theirScore) || 0;
+    let outcome = 'draw', label = 'Draw';
+    if (our > their) { outcome = 'win';  label = 'Win';  }
+    if (our < their) { outcome = 'loss'; label = 'Loss'; }
+    let dateStr = r.date || '';
+    try {
+      if (dateStr) dateStr = formatDate(dateStr, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    } catch(e) {}
+    return `<div class="result-card">
+      <div class="result-card-header">
+        <span class="result-card-date">${dateStr}</span>
+        <span class="result-card-outcome outcome-${outcome}">${label}</span>
+      </div>
+      <div class="result-card-score">
+        <div class="result-card-team">
+          <div class="result-card-team-name">Eltham Redbacks</div>
+          <div class="result-card-goals" style="color:${outcome==='win'?'var(--green)':outcome==='loss'?'var(--red)':'var(--black)'}">${our}</div>
+        </div>
+        <div class="result-card-vs" style="font-size:20px;font-weight:900;color:var(--gray-light)">—</div>
+        <div class="result-card-team">
+          <div class="result-card-team-name">${r.opponent || '—'}</div>
+          <div class="result-card-goals">${their}</div>
+        </div>
+      </div>
+      ${buildScorerLine(r.scorers)}
+    </div>`;
+  }).join('');
 }
 
 function buildScorerLine(scorerString) {
