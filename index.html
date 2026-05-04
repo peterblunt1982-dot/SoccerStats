@@ -1724,13 +1724,32 @@ function renderNextMatch(match) {
       ${dateStr ? `<div class="nm-pill"><span class="nm-pill-icon">📅</span><span class="nm-pill-text">${dateStr}</span></div>` : ''}
       ${match.kickoff ? `<div class="nm-pill"><span class="nm-pill-icon">🕐</span><span class="nm-pill-text">${match.kickoff}</span></div>` : ''}
       ${homeAway ? `<div class="nm-pill"><span class="nm-pill-icon">${isHome?'🏠':'✈️'}</span><span class="nm-pill-text">${homeAway}</span></div>` : ''}
-      ${venue ? `<div class="nm-pill"><span class="nm-pill-icon">📍</span><span class="nm-pill-text">${venue}</span></div>` : ''}
+      ${venue ? `<div class="nm-pill" onclick="openMaps('${encodeURIComponent(venue)}')" style="cursor:pointer;"><span class="nm-pill-icon">📍</span><span class="nm-pill-text" style="text-decoration:underline;text-underline-offset:2px;">${venue}</span></div>` : ''}
       ${match.fruit ? `<div class="nm-pill"><span class="nm-pill-icon">🍊</span><span class="nm-pill-text">Fruit: ${match.fruit}</span></div>` : ''}
       ${match.linesman ? `<div class="nm-pill"><span class="nm-pill-icon">🚩</span><span class="nm-pill-text">Linesman: ${match.linesman}</span></div>` : ''}
     </div>
     <button class="btn-use-match" onclick="useNextMatch()">↓ Use This Match Info</button>`;
   card._matchData = match;
 }
+function openMaps(encodedVenue) {
+  const query = encodedVenue; // already encoded
+  // On iPhone this opens the Google Maps app if installed, otherwise Google Maps in browser
+  // comgooglemaps:// is the iOS Google Maps URL scheme
+  const googleMapsApp = 'comgooglemaps://?q=' + query;
+  const googleMapsWeb = 'https://www.google.com/maps/search/?api=1&query=' + query;
+
+  // Try to open the native app first; if it fails fall back to web
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = googleMapsApp;
+  document.body.appendChild(iframe);
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+    // Always open web fallback — on Android this opens the Maps app directly
+    window.open(googleMapsWeb, '_blank');
+  }, 500);
+}
+
 function useNextMatch() {
   const card=document.getElementById('nextMatchCard');
   const match=card._matchData; if(!match) return;
