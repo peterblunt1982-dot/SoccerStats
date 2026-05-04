@@ -871,6 +871,48 @@ body::after {
 .stats-num-label { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; margin-top: 2px; }
 
 /* ============================================================
+   FIXTURE TAB
+============================================================ */
+.fixture-list { display: flex; flex-direction: column; gap: 10px; }
+.fixture-card {
+  border-radius: 20px; padding: 16px 18px;
+  background: var(--glass-white);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  animation: cardIn 0.3s var(--ease-out) both;
+  cursor: default;
+}
+.fixture-card.next-game {
+  background: linear-gradient(135deg, rgba(192,0,30,0.18) 0%, rgba(106,0,18,0.14) 100%);
+  border-color: rgba(192,0,30,0.3);
+}
+.fixture-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.fixture-date { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.fixture-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 20px;
+  background: rgba(192,0,30,0.2); color: var(--red-pale);
+  border: 1px solid rgba(192,0,30,0.25);
+}
+.fixture-badge.next { background: var(--red); color: var(--white); border-color: transparent; }
+.fixture-teams { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.fixture-team { flex: 1; }
+.fixture-team-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; margin-bottom: 2px; }
+.fixture-team-name { font-family: var(--font-display); font-size: 17px; letter-spacing: 0.5px; color: var(--white); line-height: 1.1; }
+.fixture-vs { font-size: 11px; font-weight: 800; color: var(--text-tertiary); flex-shrink: 0; padding: 0 4px; }
+.fixture-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.fixture-pill {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; padding: 4px 9px;
+}
+.fixture-pill-icon { font-size: 10px; }
+.fixture-pill-text { font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 600; }
+.fixture-pill.clickable { cursor: pointer; }
+.fixture-pill.clickable .fixture-pill-text { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ============================================================
    DATE MODAL
 ============================================================ */
 .modal-overlay {
@@ -1050,8 +1092,8 @@ body::after {
   <!-- TAB NAV -->
   <div class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('gameday')"  id="tab-gameday">⚽ Game Day</button>
-    <button class="tab-btn"        onclick="switchTab('squad')"    id="tab-squad">👦 Squad</button>
-    <button class="tab-btn"        onclick="switchTab('history')"  id="tab-history">📋 History</button>
+    <button class="tab-btn"        onclick="switchTab('fixture')"  id="tab-fixture">🗓 Fixture</button>
+    <button class="tab-btn"        onclick="switchTab('results')"  id="tab-results">📋 Results</button>
     <button class="tab-btn"        onclick="switchTab('stats')"    id="tab-stats">🏅 Stats</button>
   </div>
 
@@ -1088,7 +1130,7 @@ body::after {
         </div>
       </div>
 
-      <!-- LIVE PHASE -->
+      <!-- LIVE PHASE — squad shown here only during game -->
       <div id="gd-live" style="display:none">
         <div class="live-scoreboard">
           <div class="live-teams">
@@ -1149,16 +1191,16 @@ body::after {
 
     </div><!-- /panel-gameday -->
 
-    <!-- ===== SQUAD TAB ===== -->
-    <div class="tab-panel" id="panel-squad">
-      <div class="section-label">Full Squad</div>
-      <div class="player-list" id="squadPlayerList">
-        <div class="loading-state"><div class="spinner"></div>Loading squad…</div>
+    <!-- ===== FIXTURE TAB ===== -->
+    <div class="tab-panel" id="panel-fixture">
+      <div class="section-label">Upcoming Games</div>
+      <div class="fixture-list" id="fixtureList">
+        <div class="loading-state"><div class="spinner"></div>Loading fixtures…</div>
       </div>
     </div>
 
-    <!-- ===== HISTORY TAB ===== -->
-    <div class="tab-panel" id="panel-history">
+    <!-- ===== RESULTS TAB ===== -->
+    <div class="tab-panel" id="panel-results">
       <div class="section-label">Past Results</div>
       <div class="results-list" id="resultsList">
         <div class="loading-state"><div class="spinner"></div>Loading…</div>
@@ -1202,7 +1244,7 @@ body::after {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyv6zpVFFuMaWCZOk49b2Far6w_p6SnIlplNOSP6AE_kMOlQFyzSWfsuo7SiSPmnocm/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytlnDpIOw9Xr29-TK9Qg4vu7X0f-X6dsKHylqPqb8pn578lDEUDZ1Jktj_DYUeSC2m/exec';
 // ============================================================
 
 const STORAGE_KEY_URL  = 'redbacks_script_url';
@@ -1211,7 +1253,8 @@ const STORAGE_KEY_DATE = 'redbacks_match_date';
 let scriptUrl  = '';
 let matchDate  = '';
 let players    = [];
-let cachedResults = null;
+let cachedResults  = null;
+let cachedFixtures = null;
 let sessionGoals   = {};
 let sessionAssists = {};
 let currentSort    = 'goals';
@@ -1280,13 +1323,13 @@ function confirmReset() {
 // TABS
 // ============================================================
 function switchTab(name) {
-  ['gameday','squad','history','stats'].forEach(t => {
+  ['gameday','fixture','results','stats'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === name);
     document.getElementById('panel-' + t).classList.toggle('active', t === name);
   });
-  if (name === 'history') renderResults();
+  if (name === 'fixture') renderFixtures();
+  if (name === 'results') renderResults();
   if (name === 'stats')   renderStats();
-  if (name === 'squad')   renderSquadList();
 }
 
 // ============================================================
@@ -1590,21 +1633,17 @@ function jsonp(url, callback) {
 // ============================================================
 function loadPlayers() {
   setLoadingMsg('Loading squad');
-  ['livePlayerList','squadPlayerList'].forEach(id=>{
-    document.getElementById(id).innerHTML='<div class="loading-state"><div class="spinner"></div>Loading squad…</div>';
-  });
+  document.getElementById('livePlayerList').innerHTML='<div class="loading-state"><div class="spinner"></div>Loading squad…</div>';
   let playersDone=false, resultsDone=false;
   function checkDone(){ if(playersDone&&resultsDone) hideLoadingScreen(); }
   jsonp(scriptUrl+'?action=getPlayers', function(data,err){
     playersDone=true;
     if(err||!data||data.error){
-      const msg='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not connect.<br>Check Script URL and deployment.</p></div>';
-      document.getElementById('livePlayerList').innerHTML=msg;
-      document.getElementById('squadPlayerList').innerHTML=msg;
+      document.getElementById('livePlayerList').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not connect.<br>Check Script URL and deployment.</p></div>';
       showToast('Connection error','error');
     } else {
       players=data.players||[];
-      renderLivePlayerList(); renderSquadList();
+      renderLivePlayerList();
       showToast(players.length+' players loaded','success');
     }
     checkDone();
@@ -1614,6 +1653,8 @@ function loadPlayers() {
     if(!err&&data&&!data.error) cachedResults=data.results||[];
     checkDone();
   });
+  // Pre-fetch fixtures and next match in background
+  fetchFixtures();
   fetchNextMatch();
 }
 
@@ -1679,8 +1720,69 @@ function recordStat(idx, type, listType) {
       showToast('Assist — '+player.name+' ★','success');
     }
     setTimeout(()=>card.classList.remove('flash-goal','flash-assist'),700);
-    renderLivePlayerList(); renderSquadList();
+    renderLivePlayerList();
   });
+}
+
+// ============================================================
+// FIXTURE TAB
+// ============================================================
+function fetchFixtures() {
+  jsonp(scriptUrl+'?action=getAllFixtures', function(data,err){
+    if(!err&&data&&!data.error) cachedFixtures=data.fixtures||[];
+    // Re-render if fixture tab is currently active
+    if(document.getElementById('tab-fixture').classList.contains('active')) renderFixtures();
+  });
+}
+
+function renderFixtures() {
+  const list = document.getElementById('fixtureList');
+  if(cachedFixtures===null){
+    list.innerHTML='<div class="loading-state"><div class="spinner"></div>Loading fixtures…</div>';
+    fetchFixtures(); return;
+  }
+  if(!cachedFixtures.length){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">🗓</div><p>No upcoming fixtures found.<br>Check the Fixture tab in Google Sheets.</p></div>';
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  let isFirst = true;
+  list.innerHTML = cachedFixtures.map((f,i) => {
+    const dateStr = f.date ? formatDate(f.date, {weekday:'short',day:'numeric',month:'short'}) : '—';
+    const redbacksHome = f.home && f.home.toLowerCase().includes('eltham');
+    const leftName  = redbacksHome ? 'Eltham Redbacks' : f.opponent;
+    const leftLabel = 'Home';
+    const rightName  = redbacksHome ? f.opponent : 'Eltham Redbacks';
+    const rightLabel = 'Away';
+    const venue = f.location || f.address || '';
+    const isNext = isFirst; isFirst = false;
+    const roundLabel = f.round || '';
+    return `<div class="fixture-card${isNext?' next-game':''}" style="animation-delay:${i*0.04}s">
+      <div class="fixture-top">
+        <span class="fixture-date">${dateStr}${f.kickoff?' · '+f.kickoff:''}</span>
+        ${isNext ? '<span class="fixture-badge next">Next Game</span>' : (roundLabel ? '<span class="fixture-badge">'+roundLabel+'</span>' : '')}
+      </div>
+      <div class="fixture-teams">
+        <div class="fixture-team">
+          <div class="fixture-team-label">${leftLabel}</div>
+          <div class="fixture-team-name">${leftName}</div>
+        </div>
+        <div class="fixture-vs">VS</div>
+        <div class="fixture-team" style="text-align:right">
+          <div class="fixture-team-label">${rightLabel}</div>
+          <div class="fixture-team-name">${rightName}</div>
+        </div>
+      </div>
+      ${venue ? `<div class="fixture-pills">
+        <div class="fixture-pill clickable" onclick="openMaps('${encodeURIComponent(venue)}')">
+          <span class="fixture-pill-icon">📍</span>
+          <span class="fixture-pill-text">${venue}</span>
+        </div>
+        ${f.fruit?`<div class="fixture-pill"><span class="fixture-pill-icon">🍊</span><span class="fixture-pill-text">${f.fruit}</span></div>`:''}
+        ${f.linesman?`<div class="fixture-pill"><span class="fixture-pill-icon">🚩</span><span class="fixture-pill-text">${f.linesman}</span></div>`:''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
