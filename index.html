@@ -1749,13 +1749,23 @@ function renderFixtures() {
   let isFirst = true;
   list.innerHTML = cachedFixtures.map((f,i) => {
     const dateStr = f.date ? formatDate(f.date, {weekday:'short',day:'numeric',month:'short'}) : '—';
+    const isNext = isFirst && !f.isBye; isFirst = !f.isBye ? false : isFirst;
+
+    // Bye / No Game card
+    if (f.isBye) {
+      return `<div class="fixture-card" style="animation-delay:${i*0.04}s;opacity:0.5;">
+        <div class="fixture-top">
+          <span class="fixture-date">${dateStr}</span>
+          <span class="fixture-badge" style="background:rgba(255,255,255,0.08);color:var(--text-tertiary);border-color:rgba(255,255,255,0.08);">No Game</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-tertiary);font-weight:500;padding:4px 0;">Bye Week</div>
+      </div>`;
+    }
+
     const redbacksHome = f.home && f.home.toLowerCase().includes('eltham');
     const leftName  = redbacksHome ? 'Eltham Redbacks' : f.opponent;
-    const leftLabel = 'Home';
-    const rightName  = redbacksHome ? f.opponent : 'Eltham Redbacks';
-    const rightLabel = 'Away';
+    const rightName = redbacksHome ? f.opponent : 'Eltham Redbacks';
     const venue = f.location || f.address || '';
-    const isNext = isFirst; isFirst = false;
     const roundLabel = f.round || '';
     return `<div class="fixture-card${isNext?' next-game':''}" style="animation-delay:${i*0.04}s">
       <div class="fixture-top">
@@ -1764,12 +1774,12 @@ function renderFixtures() {
       </div>
       <div class="fixture-teams">
         <div class="fixture-team">
-          <div class="fixture-team-label">${leftLabel}</div>
+          <div class="fixture-team-label">Home</div>
           <div class="fixture-team-name">${leftName}</div>
         </div>
         <div class="fixture-vs">VS</div>
         <div class="fixture-team" style="text-align:right">
-          <div class="fixture-team-label">${rightLabel}</div>
+          <div class="fixture-team-label">Away</div>
           <div class="fixture-team-name">${rightName}</div>
         </div>
       </div>
