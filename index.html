@@ -1700,10 +1700,15 @@ function renderNextMatch(match) {
   const dateStr = match.date ? formatDate(match.date,{weekday:'long',day:'numeric',month:'long'}) : '—';
   const round = match.round||'Upcoming Match';
 
-  // Work out home/away display
-  const isHome = match.home && match.home.toLowerCase().includes('eltham');
-  const isAway = match.away && match.away.toLowerCase().includes('eltham');
-  const homeAway = isHome ? '🏠 Home' : isAway ? '✈️ Away' : (match.home || '');
+  // Determine if Redbacks are home or away
+  const redbacksHome = match.home && match.home.toLowerCase().includes('eltham');
+
+  // Home side always shown on the left
+  const leftName  = redbacksHome ? 'Eltham Redbacks' : match.opponent;
+  const leftLabel = 'Home';
+  const rightName  = redbacksHome ? match.opponent : 'Eltham Redbacks';
+  const rightLabel = 'Away';
+  const homeAwayBadge = redbacksHome ? '🏠 Home' : '✈️ Away';
 
   const venue = match.location || match.address || '';
 
@@ -1711,25 +1716,32 @@ function renderNextMatch(match) {
     <div class="nm-badge">🗓 ${round}</div>
     <div class="nm-vs">
       <div class="nm-team">
-        <div class="nm-team-label">Eltham Redbacks</div>
-        <div class="nm-team-name">Redbacks</div>
+        <div class="nm-team-label">${leftLabel}</div>
+        <div class="nm-team-name">${leftName}</div>
       </div>
       <div class="nm-divider">VS</div>
       <div class="nm-team" style="text-align:right">
-        <div class="nm-team-label">Opponent</div>
-        <div class="nm-team-name">${match.opponent}</div>
+        <div class="nm-team-label">${rightLabel}</div>
+        <div class="nm-team-name">${rightName}</div>
       </div>
     </div>
     <div class="nm-pills">
       ${dateStr ? `<div class="nm-pill"><span class="nm-pill-icon">📅</span><span class="nm-pill-text">${dateStr}</span></div>` : ''}
       ${match.kickoff ? `<div class="nm-pill"><span class="nm-pill-icon">🕐</span><span class="nm-pill-text">${match.kickoff}</span></div>` : ''}
-      ${homeAway ? `<div class="nm-pill"><span class="nm-pill-icon">${isHome?'🏠':'✈️'}</span><span class="nm-pill-text">${homeAway}</span></div>` : ''}
+      <div class="nm-pill"><span class="nm-pill-icon">${redbacksHome?'🏠':'✈️'}</span><span class="nm-pill-text">${homeAwayBadge}</span></div>
       ${venue ? `<div class="nm-pill" onclick="openMaps('${encodeURIComponent(venue)}')" style="cursor:pointer;"><span class="nm-pill-icon">📍</span><span class="nm-pill-text" style="text-decoration:underline;text-underline-offset:2px;">${venue}</span></div>` : ''}
       ${match.fruit ? `<div class="nm-pill"><span class="nm-pill-icon">🍊</span><span class="nm-pill-text">Fruit: ${match.fruit}</span></div>` : ''}
       ${match.linesman ? `<div class="nm-pill"><span class="nm-pill-icon">🚩</span><span class="nm-pill-text">Linesman: ${match.linesman}</span></div>` : ''}
     </div>
     <button class="btn-use-match" onclick="useNextMatch()">↓ Use This Match Info</button>`;
   card._matchData = match;
+
+  // Auto-set the match date from the fixture immediately on load
+  if(match.date) {
+    matchDate = match.date;
+    localStorage.setItem(STORAGE_KEY_DATE, matchDate);
+    updateDateDisplay();
+  }
 }
 function openMaps(encodedVenue) {
   const query = encodedVenue; // already encoded
