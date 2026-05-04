@@ -1772,16 +1772,31 @@ function fetchResults() {
   });
 }
 function renderResultsList(results) {
-  const reversed=results.slice().reverse();
-  if(!reversed.length){ document.getElementById('resultsList').innerHTML='<div class="empty-state"><div class="empty-icon">🏆</div><p>No results yet.<br>Finalise your first game.</p></div>'; return; }
-  document.getElementById('resultsList').innerHTML=reversed.map((r,ri)=>{
-    const our=parseInt(r.ourScore)||0, their=parseInt(r.theirScore)||0;
-    let outcome='draw',label='Draw';
-    if(our>their){outcome='win';label='Win';} if(our<their){outcome='loss';label='Loss';}
-    let dateStr=r.date||'';
-    try{ if(dateStr) dateStr=formatDate(dateStr,{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }catch(e){}
-    const ourColor=outcome==='win'?'var(--green)':outcome==='loss'?'#ff453a':'var(--white)';
-    return `<div class="result-card" style="animation-delay:${ri*0.04}s">
+  const reversed = results.slice().reverse();
+  if (!reversed.length) {
+    document.getElementById('resultsList').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🏆</div><p>No results yet.<br>Finalise your first game.</p></div>';
+    return;
+  }
+  document.getElementById('resultsList').innerHTML = reversed.map((r, ri) => {
+    // Safely parse scores — default to 0 if missing/blank
+    const our   = r.ourScore   !== '' && r.ourScore   !== undefined ? parseInt(r.ourScore)   || 0 : 0;
+    const their = r.theirScore !== '' && r.theirScore !== undefined ? parseInt(r.theirScore) || 0 : 0;
+
+    let outcome = 'draw', label = 'Draw';
+    if (our > their)  { outcome = 'win';  label = 'Win';  }
+    if (our < their)  { outcome = 'loss'; label = 'Loss'; }
+
+    // Format date safely
+    let dateStr = r.date || '';
+    try {
+      if (dateStr) dateStr = formatDate(dateStr, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    } catch(e) {}
+
+    const opponent = r.opponent || '—';
+    const ourColor = outcome === 'win' ? 'var(--green)' : outcome === 'loss' ? '#ff453a' : 'var(--white)';
+
+    return `<div class="result-card" style="animation-delay:${ri * 0.04}s">
       <div class="result-header">
         <span class="result-date">${dateStr}</span>
         <span class="outcome-badge outcome-${outcome}">${label}</span>
@@ -1793,7 +1808,7 @@ function renderResultsList(results) {
         </div>
         <div class="result-vs-dash">—</div>
         <div class="result-team">
-          <div class="result-team-name">${r.opponent||'—'}</div>
+          <div class="result-team-name">${opponent}</div>
           <div class="result-score-num">${their}</div>
         </div>
       </div>
