@@ -1767,9 +1767,15 @@ function renderFixtures() {
     const rightName = redbacksHome ? f.opponent : 'Eltham Redbacks';
     const venue = f.location || f.address || '';
     const roundLabel = f.round || '';
+
+    const timeInfo = [
+      f.arrival ? `🕐 Arrive ${f.arrival}` : '',
+      f.kickoff ? `⚽ KO ${f.kickoff}` : ''
+    ].filter(Boolean).join('  ·  ');
+
     return `<div class="fixture-card${isNext?' next-game':''}" style="animation-delay:${i*0.04}s">
       <div class="fixture-top">
-        <span class="fixture-date">${dateStr}${f.kickoff?' · '+f.kickoff:''}</span>
+        <span class="fixture-date">${dateStr}</span>
         ${isNext ? '<span class="fixture-badge next">Next Game</span>' : (roundLabel ? '<span class="fixture-badge">'+roundLabel+'</span>' : '')}
       </div>
       <div class="fixture-teams">
@@ -1783,6 +1789,7 @@ function renderFixtures() {
           <div class="fixture-team-name">${rightName}</div>
         </div>
       </div>
+      ${timeInfo ? `<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:10px;letter-spacing:0.3px;">${timeInfo}</div>` : ''}
       ${venue ? `<div class="fixture-pills">
         <div class="fixture-pill clickable" onclick="openMaps('${encodeURIComponent(venue)}')">
           <span class="fixture-pill-icon">📍</span>
@@ -1839,7 +1846,8 @@ function renderNextMatch(match) {
     </div>
     <div class="nm-pills">
       ${dateStr ? `<div class="nm-pill"><span class="nm-pill-icon">📅</span><span class="nm-pill-text">${dateStr}</span></div>` : ''}
-      ${match.kickoff ? `<div class="nm-pill"><span class="nm-pill-icon">🕐</span><span class="nm-pill-text">${match.kickoff}</span></div>` : ''}
+      ${match.arrival ? `<div class="nm-pill" style="background:rgba(192,0,30,0.25);border-color:rgba(192,0,30,0.35);"><span class="nm-pill-icon">🕐</span><span class="nm-pill-text" style="color:var(--red-pale);font-size:13px;font-weight:800;">Arrive ${match.arrival}</span></div>` : ''}
+      ${match.kickoff ? `<div class="nm-pill"><span class="nm-pill-icon">⚽</span><span class="nm-pill-text">KO ${match.kickoff}</span></div>` : ''}
       <div class="nm-pill"><span class="nm-pill-icon">${redbacksHome?'🏠':'✈️'}</span><span class="nm-pill-text">${homeAwayBadge}</span></div>
       ${venue ? `<div class="nm-pill" onclick="openMaps('${encodeURIComponent(venue)}')" style="cursor:pointer;"><span class="nm-pill-icon">📍</span><span class="nm-pill-text" style="text-decoration:underline;text-underline-offset:2px;">${venue}</span></div>` : ''}
       ${match.fruit ? `<div class="nm-pill"><span class="nm-pill-icon">🍊</span><span class="nm-pill-text">Fruit: ${match.fruit}</span></div>` : ''}
