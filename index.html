@@ -1244,7 +1244,7 @@ body::after {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySGscQoyJLWA0hJQBkEmaeo5TOTaz6cO8P442F-GOLNPpjNIwIIlymZHTwzDlNdSxm/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznIMKzhyNGQe7ZM95iLMtV6rNMtThFpLio174r07CxHLewh_EmSWUKQU5oDPzYQOqJ/exec';
 // ============================================================
 
 const STORAGE_KEY_URL  = 'redbacks_script_url';
@@ -1696,15 +1696,21 @@ function renderSquadList() {
 }
 
 // ============================================================
-// RECORD STAT
+// RECORD STAT — with double-tap guard
 // ============================================================
+let recordingInProgress = {};
 function recordStat(idx, type, listType) {
+  const key = idx + '-' + type;
+  if (recordingInProgress[key]) return; // prevent double-tap firing twice
+  recordingInProgress[key] = true;
+
   const player = players[idx];
-  const btn = document.getElementById(listType+'-btn-'+type+'-'+idx);
+  const btn  = document.getElementById(listType+'-btn-'+type+'-'+idx);
   const card = document.getElementById(listType+'-card-'+idx);
   btn.classList.add('loading');
-  const params = new URLSearchParams({action:'recordStat',name:player.name,type,date:matchDate});
-  jsonp(scriptUrl+'?'+params.toString(), function(data,err){
+  const params = new URLSearchParams({action:'recordStat', name:player.name, type, date:matchDate});
+  jsonp(scriptUrl+'?'+params.toString(), function(data, err) {
+    delete recordingInProgress[key];
     btn.classList.remove('loading');
     if(err||!data||data.error){ showToast('Failed to save','error'); return; }
     if(type==='goal'){
