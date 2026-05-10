@@ -1244,7 +1244,7 @@ body::after {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznIMKzhyNGQe7ZM95iLMtV6rNMtThFpLio174r07CxHLewh_EmSWUKQU5oDPzYQOqJ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0T1ZF24KioRwl8KrH1VnPxi8FjAy9x0MoqfNrOP5XeKk04y-C5LHDl3Ufmtvia0hE/exec';
 // ============================================================
 
 const STORAGE_KEY_URL  = 'redbacks_script_url';
@@ -1755,7 +1755,6 @@ function renderFixtures() {
   let isFirst = true;
   list.innerHTML = cachedFixtures.map((f,i) => {
     const dateStr = f.date ? formatDate(f.date, {weekday:'short',day:'numeric',month:'short'}) : '—';
-    const isNext = isFirst && !f.isBye; isFirst = !f.isBye ? false : isFirst;
 
     // Bye / No Game card
     if (f.isBye) {
@@ -1768,12 +1767,29 @@ function renderFixtures() {
       </div>`;
     }
 
+    // Already played card — dimmed with green Played badge
+    if (f.isPlayed) {
+      const rh = f.home && f.home.toLowerCase().includes('eltham');
+      return `<div class="fixture-card" style="animation-delay:${i*0.04}s;opacity:0.4;">
+        <div class="fixture-top">
+          <span class="fixture-date">${dateStr}</span>
+          <span class="fixture-badge" style="background:rgba(48,209,88,0.15);color:#30d158;border-color:rgba(48,209,88,0.2);">✓ Played</span>
+        </div>
+        <div class="fixture-teams">
+          <div class="fixture-team"><div class="fixture-team-label">Home</div><div class="fixture-team-name">${rh?'Eltham Redbacks':f.opponent}</div></div>
+          <div class="fixture-vs">VS</div>
+          <div class="fixture-team" style="text-align:right"><div class="fixture-team-label">Away</div><div class="fixture-team-name">${rh?f.opponent:'Eltham Redbacks'}</div></div>
+        </div>
+      </div>`;
+    }
+
+    // Upcoming game
+    const isNext = isFirst; isFirst = false;
     const redbacksHome = f.home && f.home.toLowerCase().includes('eltham');
     const leftName  = redbacksHome ? 'Eltham Redbacks' : f.opponent;
     const rightName = redbacksHome ? f.opponent : 'Eltham Redbacks';
     const venue = f.location || f.address || '';
     const roundLabel = f.round || '';
-
     const timeInfo = [
       f.arrival ? `🕐 Arrive ${f.arrival}` : '',
       f.kickoff ? `⚽ KO ${f.kickoff}` : ''
@@ -1785,21 +1801,14 @@ function renderFixtures() {
         ${isNext ? '<span class="fixture-badge next">Next Game</span>' : (roundLabel ? '<span class="fixture-badge">'+roundLabel+'</span>' : '')}
       </div>
       <div class="fixture-teams">
-        <div class="fixture-team">
-          <div class="fixture-team-label">Home</div>
-          <div class="fixture-team-name">${leftName}</div>
-        </div>
+        <div class="fixture-team"><div class="fixture-team-label">Home</div><div class="fixture-team-name">${leftName}</div></div>
         <div class="fixture-vs">VS</div>
-        <div class="fixture-team" style="text-align:right">
-          <div class="fixture-team-label">Away</div>
-          <div class="fixture-team-name">${rightName}</div>
-        </div>
+        <div class="fixture-team" style="text-align:right"><div class="fixture-team-label">Away</div><div class="fixture-team-name">${rightName}</div></div>
       </div>
       ${timeInfo ? `<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);margin-bottom:10px;letter-spacing:0.3px;">${timeInfo}</div>` : ''}
       ${venue ? `<div class="fixture-pills">
         <div class="fixture-pill clickable" onclick="openMaps('${encodeURIComponent(venue)}')">
-          <span class="fixture-pill-icon">📍</span>
-          <span class="fixture-pill-text">${venue}</span>
+          <span class="fixture-pill-icon">📍</span><span class="fixture-pill-text">${venue}</span>
         </div>
         ${f.fruit?`<div class="fixture-pill"><span class="fixture-pill-icon">🍊</span><span class="fixture-pill-text">${f.fruit}</span></div>`:''}
         ${f.linesman?`<div class="fixture-pill"><span class="fixture-pill-icon">🚩</span><span class="fixture-pill-text">${f.linesman}</span></div>`:''}
