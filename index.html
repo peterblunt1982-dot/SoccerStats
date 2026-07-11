@@ -1053,7 +1053,7 @@ body::after {
     <img src="https://elthamredbacks.com.au/wp-content/uploads/2025/07/ERvKPLINEUP-1-127x137.png" alt="ERFC" onerror="this.parentNode.innerHTML='🕷️'">
   </div>
   <h2>ELTHAM <span>REDBACKS</span></h2>
-  <p class="setup-sub">Paste your Google Apps Script URL to connect to the Soccerstats sheet.</p>
+  <p class="setup-sub">https://script.google.com/macros/s/AKfycbxtKld8X8rzodAd1COKM7ZSia1TJX1XlyAD2OJKPkiZZPsoE-RDT_Nmfui3vKsqVTO3/exec.</p>
   <input type="url" class="setup-input" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   <button class="btn-setup" onclick="saveScriptUrl()">Connect to Google Sheets</button>
 </div>
@@ -1244,7 +1244,7 @@ body::after {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0T1ZF24KioRwl8KrH1VnPxi8FjAy9x0MoqfNrOP5XeKk04y-C5LHDl3Ufmtvia0hE/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbDqsPqagChGXgNWUh1LCLNFvPSf4BeRwNA_DbDKKjHNtq5FqlAUt9pHtWItAVa9Dmug/exec';
 // ============================================================
 
 const STORAGE_KEY_URL  = 'redbacks_script_url';
@@ -1769,7 +1769,7 @@ function renderFixtures() {
 
     // Already played card — dimmed with green Played badge
     if (f.isPlayed) {
-      const rh = f.home && f.home.toLowerCase().includes('eltham');
+      const rh = f.homeaway && f.homeaway.toLowerCase() === 'home';
       return `<div class="fixture-card" style="animation-delay:${i*0.04}s;opacity:0.4;">
         <div class="fixture-top">
           <span class="fixture-date">${dateStr}</span>
@@ -1785,7 +1785,7 @@ function renderFixtures() {
 
     // Upcoming game
     const isNext = isFirst; isFirst = false;
-    const redbacksHome = f.home && f.home.toLowerCase().includes('eltham');
+    const redbacksHome = f.homeaway && f.homeaway.toLowerCase() === 'home';
     const leftName  = redbacksHome ? 'Eltham Redbacks' : f.opponent;
     const rightName = redbacksHome ? f.opponent : 'Eltham Redbacks';
     const venue = f.location || f.address || '';
@@ -1835,7 +1835,7 @@ function renderNextMatch(match) {
   const round = match.round||'Upcoming Match';
 
   // Determine if Redbacks are home or away
-  const redbacksHome = match.home && match.home.toLowerCase().includes('eltham');
+  const redbacksHome = match.homeaway && match.homeaway.toLowerCase() === 'home';
 
   // Home side always shown on the left
   const leftName  = redbacksHome ? 'Eltham Redbacks' : match.opponent;
